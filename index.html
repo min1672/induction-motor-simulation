@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>유도전동기 자계 시뮬레이션</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans KR",sans-serif;background:#f4f7fb;color:#172033}
+button,input{font:inherit}.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#eaf2ff,#fff)}
+.box{width:min(430px,92vw);background:white;padding:42px;border-radius:22px;box-shadow:0 18px 55px #1f293725;text-align:center}.box h1{color:#163b66;margin:0 0 10px}.box p{color:#667085}.box input{width:100%;padding:14px;border:1px solid #ccd6e2;border-radius:10px;text-align:center;margin:12px 0}.primary{border:0;background:#2563eb;color:white;padding:11px 18px;border-radius:9px;font-weight:700;cursor:pointer}.box .primary{width:100%}.err{height:20px;color:#dc2626;font-size:13px;margin-top:7px}
+#app{display:block}.top{background:linear-gradient(110deg,#12345b,#24639a);color:white;padding:22px 5%;position:sticky;top:0;z-index:5}.top h1{margin:0}.top small{opacity:.85}.wrap{width:min(1200px,94vw);margin:25px auto 50px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab,.ctrl{border:1px solid #cbd5e1;background:#fff;padding:10px 15px;border-radius:9px;font-weight:700;cursor:pointer}.tab.active,.phase.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.section{display:none}.section.active{display:block}.card{background:#fff;border:1px solid #dde5ee;border-radius:17px;padding:22px;margin-bottom:18px;box-shadow:0 6px 22px #26384d0b}.card h2{color:#17395f;margin-top:0}.sub{color:#667085;line-height:1.6}
+canvas{width:100%;height:auto;border:1px solid #e1e8f0;border-radius:12px;background:#fcfdff}.controls,.phasebar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0}.phase{min-width:70px}.controls input[type=range]{width:160px}input[type=number]{width:100px;padding:9px;border:1px solid #cbd5e1;border-radius:8px}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.gridGraphs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}.graphBox{border:1px solid #dbe4ee;border-radius:12px;padding:14px;background:#fbfdff}.graphBox h3{margin:0 0 5px;color:#17395f}.miniText{font-size:13px;color:#667085;margin:0 0 9px}.blueText{color:#2563eb;font-weight:700}.redText{color:#ef4444;font-weight:700}.info div,.field{background:#f5f8fc;border:1px solid #e3eaf2;border-radius:10px;padding:11px;text-align:center}.info b{display:block;font-size:18px;margin-top:4px}
+.fields{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.field .name{font-weight:700}.value{font-size:17px;color:#1d4ed8}.muted{font-size:12px;color:#667085}.note{margin-top:13px;padding:13px;background:#eef5ff;border-left:4px solid #2563eb;border-radius:8px;line-height:1.6}
+.analytic{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.a{border:1px solid #dbe4ee;border-radius:12px;padding:17px}.a h3{margin-top:0;color:#17395f}.formula{font-family:"Times New Roman",serif;font-size:19px;line-height:1.9;background:#f7f9fc;padding:13px;border-radius:8px;overflow:auto}
+table{width:100%;border-collapse:collapse;margin-top:15px}th,td{border:1px solid #dbe4ee;padding:8px;text-align:center}th{background:#eff4fa}
+@media(max-width:850px){.gridGraphs{grid-template-columns:1fr}.info{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:repeat(2,1fr)}.analytic{grid-template-columns:1fr}.top{position:static}}
+</style>
+</head>
+<body><div style="position:fixed;top:12px;right:16px;font-size:11px;color:#94a3b8;z-index:9999">2222350</div>
+<div class="login" id="login">
+ <div class="box"><h1>유도전동기 자계 시뮬레이션</h1><p>교번자계 분해와 다상 회전자계를 직접 확인해보세요.</p>
+ <button class="primary" onclick="enter()">입장하기</button></div>
+</div>
+
+<div id="app">
+<header class="top"><h1>유도전동기 자계 시뮬레이션</h1><small>교번자계 · 진행파 · 2상 · 3상 · 4상 · 5상</small></header>
+<div class="wrap">
+<div class="tabs">
+ <button class="tab active" onclick="show('one',this)">① 교번자계 분해</button>
+ <button class="tab" onclick="show('two',this)">② 다상 회전자계</button>
+ <button class="tab" onclick="show('three',this)">③ 해석적인 방법</button>
+</div>
+
+<section id="one" class="section active"><div class="card">
+<h2>교번자계의 분해</h2>
+<p class="sub">1페이지를 두 개의 그래프로 나누었습니다. <b>왼쪽은 합성 교번자계</b>, <b>오른쪽은 정방향·역방향 진행파를 함께 표시</b>합니다. 두 그래프 모두 중앙에 기준 <b>Y축</b>을 표시합니다.</p>
+
+<div class="gridGraphs">
+<div class="graphBox">
+<h3>① 합성 교번자계</h3>
+<p class="miniText">정방향 진행파와 역방향 진행파를 합성한 결과</p>
+<canvas id="c1sum" width="540" height="430"></canvas>
+</div>
+<div class="graphBox">
+<h3>② 정방향 + 역방향 진행파</h3>
+<p class="miniText"><span class="blueText">정방향 →</span> · <span class="redText">역방향 ←</span></p>
+<canvas id="c1waves" width="540" height="430"></canvas>
+</div>
+</div>
+
+<div class="controls"><button class="ctrl" onclick="play1=!play1">▶ / ⏸ 재생·정지</button><button class="ctrl" onclick="t1=0">↺ 처음</button><label>속도 <input id="sp1" type="range" min=".2" max="3" step=".1" value="1"></label></div>
+<div class="info"><div>현재 위상<b id="a1">0°</b></div><div>정방향<b>→ 우측</b></div><div>역방향<b>← 좌측</b></div><div>기준축<b>Y축</b></div></div>
+<div class="note"><b>핵심:</b> 정방향 진행파와 역방향 진행파를 각각 확인한 뒤, 두 파를 합성하면 시간에 따라 크기와 방향이 변하는 교번자계가 됩니다.</div>
+</div></section>
+
+<section id="two" class="section"><div class="card">
+<h2>다상 회전자계</h2><p class="sub">상 수를 선택하고 원하는 현재 위상을 직접 지정할 수 있습니다. 재생/정지를 눌러 자동 변화를 확인하거나 정지 후 특정 위상을 자세히 관찰하세요.</p>
+<div class="phasebar" id="phases"></div>
+<div class="controls"><button class="ctrl" onclick="play2=!play2">▶ / ⏸ 재생·정지</button><button class="ctrl" onclick="t2=0;sync()">↺ 0°</button>
+<label>현재 위상 <input id="ang" type="number" min="0" max="360" value="0">°</label><button class="primary" onclick="apply()">적용</button>
+<input id="slider" type="range" min="0" max="360" value="0"><label>속도 <input id="sp2" type="range" min=".2" max="3" step=".1" value="1"></label></div>
+<div id="resultMag" class="info" style="margin:8px 0">합성자계 크기</div><canvas id="c2" width="1100" height="610"></canvas>
+<div class="info"><div>현재 위상<b id="now">0°</b></div><div>상 수<b id="nn">3상</b></div><div>위상차<b id="dd">120°</b></div><div>합성자계<b id="rr">0°</b></div></div>
+<h3>현재 위상에서 각 상의 자계 크기</h3><div class="fields" id="fields"></div>
+<table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+<div class="note">각 상의 값은 <b>Fmax 기준</b>입니다. 부호는 순간적인 방향을 포함하고, |F|는 자계의 실제 크기를 나타냅니다.</div>
+</div></section>
+
+<section id="three" class="section"><div class="card"><h2>해석적인 방법</h2><p class="sub">대칭 N상 시스템에서 인접 상의 위상차는 <b>360°/N</b>입니다. 아래에 2상·3상·4상·5상을 각각 정리했습니다.</p><div class="analytic" id="analytic"></div></div></section>
+</div></div>
+
+<script>
+const PASSWORD="2222350";
+function enter(){login.style.display="none";app.style.display="block";requestAnimationFrame(loop)}
+function show(id,b){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
+let t1=0,t2=0,play1=true,play2=true,N=3;
+const cols=["#2563eb","#ef4444","#16a34a","#9333ea","#f59e0b"], names=["A","B","C","D","E"];
+[2,3,4,5].forEach(n=>{let b=document.createElement("button");b.className="ctrl phase"+(n===3?" active":"");b.textContent=n+"상";b.onclick=()=>{N=n;document.querySelectorAll(".phase").forEach(q=>q.classList.remove("active"));b.classList.add("active");buildAnalytic()};phases.appendChild(b)});
+function arrow(x,cx,cy,x2,y2,col,w){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=w;let a=Math.atan2(y2-cy,x2-cx),h=12;x.beginPath();x.moveTo(cx,cy);x.lineTo(x2,y2);x.stroke();x.beginPath();x.moveTo(x2,y2);x.lineTo(x2-h*Math.cos(a-.5),y2-h*Math.sin(a-.5));x.lineTo(x2-h*Math.cos(a+.5),y2-h*Math.sin(a+.5));x.closePath();x.fill()}
+function draw1(){
+ const sum=document.getElementById("c1sum"), waves=document.getElementById("c1waves");
+ const cs=sum.getContext("2d"), cw=waves.getContext("2d");
+ drawGraph(cs,540,430,"sum");
+ drawGraph(cw,540,430,"waves");
+ a1.textContent=Math.round((((t1*180/Math.PI)%360)+360)%360)+"°";
+}
+function drawGraph(x,w,h,mode){
+ x.clearRect(0,0,w,h);
+ const ox=55, oy=215, gw=430, amp=72;
+ x.fillStyle="#172033";x.font="bold 16px Arial";x.fillText("F",20,55);x.fillText("θ",485,235);
+ // 기준 Y축
+ x.strokeStyle="#475569";x.lineWidth=1.6;x.beginPath();x.moveTo(ox+gw/2,55);x.lineTo(ox+gw/2,375);x.stroke();
+ x.fillStyle="#475569";x.font="bold 13px Arial";x.fillText("기준 Y축",ox+gw/2+7,70);
+ // X축
+ x.strokeStyle="#9aa8b8";x.lineWidth=1;x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+gw,oy);x.stroke();
+ // 눈금
+ for(let j=0;j<=4;j++){let xx=ox+j*gw/4;x.strokeStyle="#e2e8f0";x.beginPath();x.moveTo(xx,75);x.lineTo(xx,360);x.stroke();}
+ x.fillStyle="#667085";x.font="12px Arial";x.fillText("-π",ox-4,oy+22);x.fillText("-π/2",ox+gw/4-15,oy+22);x.fillText("0",ox+gw/2-3,oy+22);x.fillText("π/2",ox+3*gw/4-15,oy+22);x.fillText("π",ox+gw-5,oy+22);
+
+ if(mode==="waves"){
+   // 정방향
+   x.strokeStyle="#2563eb";x.lineWidth=3;x.beginPath();
+   for(let j=0;j<=gw;j++){let xx=ox+j,ph=j/70*2*Math.PI-t1,y=oy-amp*Math.cos(ph);if(j===0)x.moveTo(xx,y);else x.lineTo(xx,y)}x.stroke();
+   // 역방향
+   x.strokeStyle="#ef4444";x.lineWidth=3;x.beginPath();
+   for(let j=0;j<=gw;j++){let xx=ox+j,ph=j/70*2*Math.PI+t1,y=oy-amp*Math.cos(ph);if(j===0)x.moveTo(xx,y);else x.lineTo(xx,y)}x.stroke();
+   x.fillStyle="#2563eb";x.font="bold 14px Arial";x.fillText("정방향  →",70,395);
+   x.fillStyle="#ef4444";x.fillText("역방향  ←",340,395);
+ }else{
+   // 합성 교번자계
+   x.strokeStyle="#111827";x.lineWidth=4;x.beginPath();
+   for(let j=0;j<=gw;j++){let xx=ox+j,ph=j/70*2*Math.PI,y=oy-150*Math.cos(ph)*Math.cos(t1);if(j===0)x.moveTo(xx,y);else x.lineTo(xx,y)}x.stroke();
+   x.fillStyle="#111827";x.font="bold 14px Arial";x.fillText("합성 교번자계 F(θ,t)",145,395);
+ }
+}
+function apply(){t2=((Number(ang.value)||0)%360)*Math.PI/180;play2=false;sync()}
+function sync(){let d=((t2*180/Math.PI)%360+360)%360;ang.value=Math.round(d);slider.value=d}
+slider.oninput=()=>{t2=Number(slider.value)*Math.PI/180;play2=false;sync()}
+function draw2(){let c=c2,x=c.getContext("2d"),cx=265,cy=290,r=175,d=2*Math.PI/N,sx=0,sy=0;
+x.clearRect(0,0,c.width,c.height);x.fillStyle="#17395f";x.font="bold 20px Arial";x.fillText(N+"상 코일 배치와 합성자계",45,35);
+x.strokeStyle="#bdc9d6";x.lineWidth=2;x.beginPath();x.arc(cx,cy,r,0,2*Math.PI);x.stroke();
+for(let k=0;k<N;k++){let a=-Math.PI/2+k*d,v=Math.cos(t2-k*d),vx=110*v*Math.cos(a),vy=110*v*Math.sin(a);x.strokeStyle="#d9e1ea";x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));x.stroke();x.fillStyle=cols[k];x.beginPath();x.arc(cx+r*Math.cos(a),cy+r*Math.sin(a),10,0,2*Math.PI);x.fill();x.fillStyle="#172033";x.font="bold 15px Arial";x.fillText(names[k]+"상",cx+(r+16)*Math.cos(a)-9,cy+(r+16)*Math.sin(a)+5);arrow(x,cx,cy,cx+vx,cy+vy,cols[k],3);sx+=vx;sy+=vy}
+arrow(x,cx,cy,cx+sx,cy+sy,"#111827",6);x.fillStyle="#111827";x.font="bold 15px Arial";x.fillText("합성자계",cx+sx+10,cy+sy);
+let ox=520,oy=95,gw=520,gh=350;x.fillStyle="#17395f";x.font="bold 20px Arial";x.fillText("각 상의 파형",ox,55);x.strokeStyle="#9aa8b8";x.beginPath();x.moveTo(ox,oy+gh/2);x.lineTo(ox+gw,oy+gh/2);x.stroke();
+for(let k=0;k<N;k++){x.strokeStyle=cols[k];x.lineWidth=2.5;x.beginPath();for(let j=0;j<=gw;j++){let xx=ox+j,ph=j/gw*2*Math.PI,y=oy+gh/2-120*Math.cos(ph-k*d);if(j===0)x.moveTo(xx,y);else x.lineTo(xx,y)}x.stroke();x.fillStyle=cols[k];x.fillText(names[k],ox+gw+8,oy+25+k*20)}
+let mark=ox+((((t2%(2*Math.PI))+2*Math.PI)%(2*Math.PI))/(2*Math.PI))*gw;x.strokeStyle="#111827";x.setLineDash([6,5]);x.beginPath();x.moveTo(mark,oy);x.lineTo(mark,oy+gh);x.stroke();x.setLineDash([]);
+let mag=Math.sqrt(sx*sx+sy*sy)/110; let magEl=document.getElementById("resultMag"); if(magEl) magEl.innerHTML="<div><b>합성자계 크기</b><b>"+fmt(mag)+" Fmax</b></div><div><b>이론값</b><b>"+(N/2).toFixed(1)+" Fmax</b></div>";
+let deg=((t2*180/Math.PI)%360+360)%360;now.textContent=Math.round(deg)+"°";nn.textContent=N+"상";dd.textContent=Math.round(360/N)+"°";rr.textContent=Math.round(((Math.atan2(sy,sx)*180/Math.PI)+360)%360)+"°";updateFields(deg)}
+function fmt(v){return (Math.abs(v)<.0005?0:v).toFixed(3).replace(/\.?0+$/,"")}
+function updateFields(deg){let fs="",vals=[];for(let k=0;k<N;k++){let phase=deg-k*360/N,v=Math.cos(phase*Math.PI/180);vals.push(v);fs+=`<div class="field"><div class="name">${names[k]}상</div><div class="muted">위상 ${Math.round((phase+360)%360)}°</div><div class="value">${fmt(v)} Fmax</div><div class="muted">|F| = ${fmt(Math.abs(v))} Fmax</div></div>`}fields.innerHTML=fs;thead.innerHTML="<tr><th>현재 위상</th>"+names.slice(0,N).map(n=>`<th>${n}상</th>`).join("")+"</tr>";tbody.innerHTML="<tr><td>"+Math.round(deg)+"°</td>"+vals.map(v=>`<td>${fmt(v)} Fmax<br><span class='muted'>|F|=${fmt(Math.abs(v))} Fmax</span></td>`).join("")+"</tr>"}
+function buildAnalytic(){let g=analytic;g.innerHTML="";[2,3,4,5].forEach(n=>{let d=360/n,s=`<h3>${n}상 회전자계의 해석적 유도</h3><div class="formula"><b>① 각 상의 자계식</b><br>F<sub>k</sub>=F<sub>max</sub>cos(θ−α<sub>k</sub>)cos(ωt−α<sub>k</sub>)<br>α<sub>k</sub>=k×${d}°<br><br><b>② 곱을 합으로 바꾸기</b><br>cos A cos B=½[cos(A−B)+cos(A+B)]</div>`;for(let k=0;k<n;k++){let a=k*d;let label=names[k];let sh=a?`−${a}°`:``;let rev=a?`θ+ωt−${2*a}°`:`θ+ωt`;s+=`<p><b>${label}상</b> : 공간 위상 ${a}°, 시간 위상 ${a}°</p><div class="formula">F<sub>${k+1}</sub>=F<sub>max</sub>cos(θ${sh})cos(ωt${sh})<br>=½F<sub>max</sub>cos(θ−ωt)+½F<sub>max</sub>cos(${rev})</div>`}s+=`<div class="result" style="margin-top:12px;padding:14px;background:#eef5ff;border-left:4px solid #2563eb;border-radius:8px"><b>③ 전체 합성</b><br>정방향 성분 = ${n}×½F<sub>max</sub>cos(θ−ωt) = ${n}/2 F<sub>max</sub>cos(θ−ωt)<br>역방향 성분 = 균등 위상으로 배치된 ${n}개 성분의 합 = 0<br><br><strong>∴ F(θ,t)=${n}/2·F<sub>max</sub>cos(θ−ωt)</strong><br><span class="muted">즉, 합성자계의 크기는 ${n}/2·F<sub>max</sub>이고 시간에 따라 방향만 회전합니다.</span></div>`;g.insertAdjacentHTML("beforeend",`<div class="a">${s}</div>`)})}
+let last=performance.now();function loop(nowT){let dt=(nowT-last)/1000;last=nowT;if(play1)t1+=dt*Number(sp1.value)*1.3;if(play2){t2+=dt*Number(sp2.value)*1.2;sync()}draw1();draw2();requestAnimationFrame(loop)}buildAnalytic();
+</script>
+</body>
+</html>
