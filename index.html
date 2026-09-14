@@ -1,19 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="google-site-verification" content="Gk3U_L7Cvxjnsi6wrQRu9iisfP1vqX4JloygG62YbdI" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>전동기 자기장 시뮬레이션 | 회전자계와 교번자계</title>
-
-<meta name="description" content="전동기의 교번자계와 회전자계 원리를 직접 확인할 수 있는 교육용 시뮬레이션입니다. 2상, 3상, 4상, 5상 다상 교류의 회전자계와 자기장 합성을 학습할 수 있습니다.">
-
-<meta name="robots" content="index, follow">
-
-<meta property="og:type" content="website">
-<meta property="og:title" content="전동기 자기장 시뮬레이션">
-<meta property="og:description" content="교번자계와 회전자계의 원리를 직접 확인하고 2상, 3상, 4상, 5상 다상 자기장의 합성을 학습할 수 있는 교육용 시뮬레이션입니다.">
-<meta property="og:url" content="https://min1672.github.io/induction-motor-simulation/">
+<title>유도전동기 자계 시뮬레이션</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans KR",sans-serif;background:#f4f7fb;color:#172033}
 button,input{font:inherit}.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#eaf2ff,#fff)}
@@ -67,7 +57,7 @@ table{width:100%;border-collapse:collapse;margin-top:15px}th,td{border:1px solid
 </div></section>
 
 <section id="two" class="section"><div class="card">
-<h2>다상 회전자계</h2><p class="sub">상 수를 선택하고 원하는 현재 위상을 직접 지정할 수 있습니다. 재생/정지를 눌러 자동 변화를 확인하거나 정지 후 특정 위상을 자세히 관찰하세요.</p>
+<h2>다상 회전자계</h2><p class="sub">상 수를 선택하고 원하는 현재 위상을 직접 지정할 수 있습니다. 2상은 90° 위상차를 적용하고, 3상·4상·5상은 각각 120°·90°·72°의 위상차를 적용합니다. 재생/정지를 눌러 자동 변화를 확인하거나 정지 후 특정 위상을 자세히 관찰하세요.</p>
 <div class="phasebar" id="phases"></div>
 <div class="controls"><button class="ctrl" onclick="play2=!play2">▶ / ⏸ 재생·정지</button><button class="ctrl" onclick="t2=0;sync()">↺ 0°</button>
 <label>현재 위상 <input id="ang" type="number" min="0" max="360" value="0">°</label><button class="primary" onclick="apply()">적용</button>
@@ -87,6 +77,8 @@ const PASSWORD="2222350";
 function enter(){login.style.display="none";app.style.display="block";requestAnimationFrame(loop)}
 function show(id,b){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
 let t1=0,t2=0,play1=true,play2=true,N=3;
+function phaseStep(){return N===2?Math.PI/2:2*Math.PI/N}
+function phaseStepDeg(){return N===2?90:360/N}
 const cols=["#2563eb","#ef4444","#16a34a","#9333ea","#f59e0b"], names=["A","B","C","D","E"];
 [2,3,4,5].forEach(n=>{let b=document.createElement("button");b.className="ctrl phase"+(n===3?" active":"");b.textContent=n+"상";b.onclick=()=>{N=n;document.querySelectorAll(".phase").forEach(q=>q.classList.remove("active"));b.classList.add("active");buildAnalytic()};phases.appendChild(b)});
 function arrow(x,cx,cy,x2,y2,col,w){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=w;let a=Math.atan2(y2-cy,x2-cx),h=12;x.beginPath();x.moveTo(cx,cy);x.lineTo(x2,y2);x.stroke();x.beginPath();x.moveTo(x2,y2);x.lineTo(x2-h*Math.cos(a-.5),y2-h*Math.sin(a-.5));x.lineTo(x2-h*Math.cos(a+.5),y2-h*Math.sin(a+.5));x.closePath();x.fill()}
@@ -129,19 +121,40 @@ function drawGraph(x,w,h,mode){
 function apply(){t2=((Number(ang.value)||0)%360)*Math.PI/180;play2=false;sync()}
 function sync(){let d=((t2*180/Math.PI)%360+360)%360;ang.value=Math.round(d);slider.value=d}
 slider.oninput=()=>{t2=Number(slider.value)*Math.PI/180;play2=false;sync()}
-function draw2(){let c=c2,x=c.getContext("2d"),cx=265,cy=290,r=175,d=2*Math.PI/N,sx=0,sy=0;
-x.clearRect(0,0,c.width,c.height);x.fillStyle="#17395f";x.font="bold 20px Arial";x.fillText(N+"상 코일 배치와 합성자계",45,35);
-x.strokeStyle="#bdc9d6";x.lineWidth=2;x.beginPath();x.arc(cx,cy,r,0,2*Math.PI);x.stroke();
-for(let k=0;k<N;k++){let a=-Math.PI/2+k*d,v=Math.cos(t2-k*d),vx=110*v*Math.cos(a),vy=110*v*Math.sin(a);x.strokeStyle="#d9e1ea";x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));x.stroke();x.fillStyle=cols[k];x.beginPath();x.arc(cx+r*Math.cos(a),cy+r*Math.sin(a),10,0,2*Math.PI);x.fill();x.fillStyle="#172033";x.font="bold 15px Arial";x.fillText(names[k]+"상",cx+(r+16)*Math.cos(a)-9,cy+(r+16)*Math.sin(a)+5);arrow(x,cx,cy,cx+vx,cy+vy,cols[k],3);sx+=vx;sy+=vy}
-arrow(x,cx,cy,cx+sx,cy+sy,"#111827",6);x.fillStyle="#111827";x.font="bold 15px Arial";x.fillText("합성자계",cx+sx+10,cy+sy);
-let ox=520,oy=95,gw=520,gh=350;x.fillStyle="#17395f";x.font="bold 20px Arial";x.fillText("각 상의 파형",ox,55);x.strokeStyle="#9aa8b8";x.beginPath();x.moveTo(ox,oy+gh/2);x.lineTo(ox+gw,oy+gh/2);x.stroke();
+function draw2(){
+let c=c2,x=c.getContext("2d"),cx=265,cy=285,r=178,d=phaseStep(),sx=0,sy=0;
+x.clearRect(0,0,c.width,c.height);x.fillStyle="#17395f";x.font="bold 20px Arial";x.fillText(N+"상 코일 배치와 합성자계",35,35);
+/* 장식된 고정자 */
+x.save();x.translate(cx,cy);x.strokeStyle="#e7edf5";x.lineWidth=1;
+for(let q=45;q<r;q+=45){x.beginPath();x.arc(0,0,q,0,2*Math.PI);x.stroke()}
+for(let q=0;q<12;q++){let ga=q*Math.PI/6;x.beginPath();x.moveTo(0,0);x.lineTo(r*Math.cos(ga),r*Math.sin(ga));x.stroke()}
+x.restore();
+x.strokeStyle="#8fa3b8";x.lineWidth=3;x.beginPath();x.arc(cx,cy,r,0,2*Math.PI);x.stroke();
+x.strokeStyle="#d7e0ea";x.lineWidth=12;x.beginPath();x.arc(cx,cy,r-7,0,2*Math.PI);x.stroke();
+x.strokeStyle="#aebdcd";x.lineWidth=2;x.beginPath();x.arc(cx,cy,52,0,2*Math.PI);x.stroke();
+/* 코일 */
+for(let k=0;k<N;k++){let a=-Math.PI/2+k*d,ux=Math.cos(a),uy=Math.sin(a),rr=r-15;
+ x.save();x.translate(cx+rr*ux,cy+rr*uy);x.rotate(a+Math.PI/2);x.fillStyle=cols[k];x.globalAlpha=.16;x.fillRect(-18,-11,36,22);x.globalAlpha=1;x.strokeStyle=cols[k];x.lineWidth=3;x.strokeRect(-18,-11,36,22);x.restore();
+ x.strokeStyle=cols[k];x.globalAlpha=.22;x.lineWidth=2;x.beginPath();x.moveTo(cx+52*ux,cy+52*uy);x.lineTo(cx+(r-30)*ux,cy+(r-30)*uy);x.stroke();x.globalAlpha=1;
+ x.fillStyle=cols[k];x.beginPath();x.arc(cx+(r-25)*ux,cy+(r-25)*uy,7,0,2*Math.PI);x.fill();x.fillStyle="#172033";x.font="bold 14px Arial";x.fillText(names[k]+"상",cx+(r+14)*ux-8,cy+(r+14)*uy+5);
+}
+/* 회전자 */
+x.fillStyle="#f8fafc";x.strokeStyle="#64748b";x.lineWidth=3;x.beginPath();x.arc(cx,cy,43,0,2*Math.PI);x.fill();x.stroke();x.strokeStyle="#cbd5e1";x.lineWidth=2;x.beginPath();x.moveTo(cx-43,cy);x.lineTo(cx+43,cy);x.stroke();x.beginPath();x.moveTo(cx,cy-43);x.lineTo(cx,cy+43);x.stroke();x.fillStyle="#64748b";x.beginPath();x.arc(cx,cy,7,0,2*Math.PI);x.fill();
+/* 합성자계: 원 안에 항상 들어가도록 벡터 스케일 제한 */
+let displayMax=r*.72, unit=displayMax/(N/2);
+for(let k=0;k<N;k++){let a=-Math.PI/2+k*d,v=Math.cos(t2-k*d),vx=unit*v*Math.cos(a),vy=unit*v*Math.sin(a);arrow(x,cx,cy,cx+vx,cy+vy,cols[k],3);sx+=vx;sy+=vy}
+let raw=Math.sqrt(sx*sx+sy*sy);if(raw>displayMax){let sc=displayMax/raw;sx*=sc;sy*=sc}
+if(Math.sqrt(sx*sx+sy*sy)>1){arrow(x,cx,cy,cx+sx,cy+sy,"#111827",7);x.fillStyle="#111827";x.font="bold 15px Arial";x.fillText("합성자계",Math.max(8,Math.min(c.width-75,cx+sx+10)),Math.max(55,Math.min(415,cy+sy)))}
+x.fillStyle="#475569";x.font="12px Arial";x.fillText("공간 위상차 "+phaseStepDeg()+"°",cx-55,cy+r+27);
+/* 파형 */
+let ox=520,oy=95,gw=520,gh=350;x.fillStyle="#17395f";x.font="bold 20px Arial";x.fillText("각 상의 파형",ox,55);x.strokeStyle="#9aa8b8";x.lineWidth=1;x.beginPath();x.moveTo(ox,oy+gh/2);x.lineTo(ox+gw,oy+gh/2);x.stroke();
 for(let k=0;k<N;k++){x.strokeStyle=cols[k];x.lineWidth=2.5;x.beginPath();for(let j=0;j<=gw;j++){let xx=ox+j,ph=j/gw*2*Math.PI,y=oy+gh/2-120*Math.cos(ph-k*d);if(j===0)x.moveTo(xx,y);else x.lineTo(xx,y)}x.stroke();x.fillStyle=cols[k];x.fillText(names[k],ox+gw+8,oy+25+k*20)}
 let mark=ox+((((t2%(2*Math.PI))+2*Math.PI)%(2*Math.PI))/(2*Math.PI))*gw;x.strokeStyle="#111827";x.setLineDash([6,5]);x.beginPath();x.moveTo(mark,oy);x.lineTo(mark,oy+gh);x.stroke();x.setLineDash([]);
-let mag=Math.sqrt(sx*sx+sy*sy)/110; let magEl=document.getElementById("resultMag"); if(magEl) magEl.innerHTML="<div><b>합성자계 크기</b><b>"+fmt(mag)+" Fmax</b></div><div><b>이론값</b><b>"+(N/2).toFixed(1)+" Fmax</b></div>";
-let deg=((t2*180/Math.PI)%360+360)%360;now.textContent=Math.round(deg)+"°";nn.textContent=N+"상";dd.textContent=Math.round(360/N)+"°";rr.textContent=Math.round(((Math.atan2(sy,sx)*180/Math.PI)+360)%360)+"°";updateFields(deg)}
+let magEl=document.getElementById("resultMag");if(magEl)magEl.innerHTML="<div><b>합성자계 크기</b><b>"+(N/2).toFixed(1)+" Fmax</b></div><div><b>상간 위상차</b><b>"+phaseStepDeg()+"°</b></div>";
+let deg=((t2*180/Math.PI)%360+360)%360;now.textContent=Math.round(deg)+"°";nn.textContent=N+"상";dd.textContent=phaseStepDeg()+"°";rr.textContent=Math.round(((Math.atan2(sy,sx)*180/Math.PI)+360)%360)+"°";updateFields(deg)}
 function fmt(v){return (Math.abs(v)<.0005?0:v).toFixed(3).replace(/\.?0+$/,"")}
-function updateFields(deg){let fs="",vals=[];for(let k=0;k<N;k++){let phase=deg-k*360/N,v=Math.cos(phase*Math.PI/180);vals.push(v);fs+=`<div class="field"><div class="name">${names[k]}상</div><div class="muted">위상 ${Math.round((phase+360)%360)}°</div><div class="value">${fmt(v)} Fmax</div><div class="muted">|F| = ${fmt(Math.abs(v))} Fmax</div></div>`}fields.innerHTML=fs;thead.innerHTML="<tr><th>현재 위상</th>"+names.slice(0,N).map(n=>`<th>${n}상</th>`).join("")+"</tr>";tbody.innerHTML="<tr><td>"+Math.round(deg)+"°</td>"+vals.map(v=>`<td>${fmt(v)} Fmax<br><span class='muted'>|F|=${fmt(Math.abs(v))} Fmax</span></td>`).join("")+"</tr>"}
-function buildAnalytic(){let g=analytic;g.innerHTML="";[2,3,4,5].forEach(n=>{let d=360/n,s=`<h3>${n}상 회전자계의 해석적 유도</h3><div class="formula"><b>① 각 상의 자계식</b><br>F<sub>k</sub>=F<sub>max</sub>cos(θ−α<sub>k</sub>)cos(ωt−α<sub>k</sub>)<br>α<sub>k</sub>=k×${d}°<br><br><b>② 곱을 합으로 바꾸기</b><br>cos A cos B=½[cos(A−B)+cos(A+B)]</div>`;for(let k=0;k<n;k++){let a=k*d;let label=names[k];let sh=a?`−${a}°`:``;let rev=a?`θ+ωt−${2*a}°`:`θ+ωt`;s+=`<p><b>${label}상</b> : 공간 위상 ${a}°, 시간 위상 ${a}°</p><div class="formula">F<sub>${k+1}</sub>=F<sub>max</sub>cos(θ${sh})cos(ωt${sh})<br>=½F<sub>max</sub>cos(θ−ωt)+½F<sub>max</sub>cos(${rev})</div>`}s+=`<div class="result" style="margin-top:12px;padding:14px;background:#eef5ff;border-left:4px solid #2563eb;border-radius:8px"><b>③ 전체 합성</b><br>정방향 성분 = ${n}×½F<sub>max</sub>cos(θ−ωt) = ${n}/2 F<sub>max</sub>cos(θ−ωt)<br>역방향 성분 = 균등 위상으로 배치된 ${n}개 성분의 합 = 0<br><br><strong>∴ F(θ,t)=${n}/2·F<sub>max</sub>cos(θ−ωt)</strong><br><span class="muted">즉, 합성자계의 크기는 ${n}/2·F<sub>max</sub>이고 시간에 따라 방향만 회전합니다.</span></div>`;g.insertAdjacentHTML("beforeend",`<div class="a">${s}</div>`)})}
+function updateFields(deg){let fs="",vals=[];for(let k=0;k<N;k++){let phase=deg-k*phaseStepDeg(),v=Math.cos(phase*Math.PI/180);vals.push(v);fs+=`<div class="field"><div class="name">${names[k]}상</div><div class="muted">위상 ${Math.round((phase+360)%360)}°</div><div class="value">${fmt(v)} Fmax</div><div class="muted">|F| = ${fmt(Math.abs(v))} Fmax</div></div>`}fields.innerHTML=fs;thead.innerHTML="<tr><th>현재 위상</th>"+names.slice(0,N).map(n=>`<th>${n}상</th>`).join("")+"</tr>";tbody.innerHTML="<tr><td>"+Math.round(deg)+"°</td>"+vals.map(v=>`<td>${fmt(v)} Fmax<br><span class='muted'>|F|=${fmt(Math.abs(v))} Fmax</span></td>`).join("")+"</tr>"}
+function buildAnalytic(){let g=analytic;g.innerHTML="";[2,3,4,5].forEach(n=>{let d=(n===2?90:360/n),s=`<h3>${n}상 회전자계의 해석적 유도</h3><div class="formula"><b>① 각 상의 자계식</b><br>F<sub>k</sub>=F<sub>max</sub>cos(θ−α<sub>k</sub>)cos(ωt−α<sub>k</sub>)<br>α<sub>k</sub>=k×${d}°<br><br><b>② 곱을 합으로 바꾸기</b><br>cos A cos B=½[cos(A−B)+cos(A+B)]</div>`;for(let k=0;k<n;k++){let a=k*d;let label=names[k];let sh=a?`−${a}°`:``;let rev=a?`θ+ωt−${2*a}°`:`θ+ωt`;s+=`<p><b>${label}상</b> : 공간 위상 ${a}°, 시간 위상 ${a}°</p><div class="formula">F<sub>${k+1}</sub>=F<sub>max</sub>cos(θ${sh})cos(ωt${sh})<br>=½F<sub>max</sub>cos(θ−ωt)+½F<sub>max</sub>cos(${rev})</div>`}s+=`<div class="result" style="margin-top:12px;padding:14px;background:#eef5ff;border-left:4px solid #2563eb;border-radius:8px"><b>③ 전체 합성</b><br>정방향 성분 = ${n}×½F<sub>max</sub>cos(θ−ωt) = ${n}/2 F<sub>max</sub>cos(θ−ωt)<br>역방향 성분 = 균등 위상으로 배치된 ${n}개 성분의 합 = 0<br><br><strong>∴ F(θ,t)=${n}/2·F<sub>max</sub>cos(θ−ωt)</strong><br><span class="muted">즉, 합성자계의 크기는 ${n}/2·F<sub>max</sub>이고 시간에 따라 방향만 회전합니다.</span></div>`;g.insertAdjacentHTML("beforeend",`<div class="a">${s}</div>`)})}
 let last=performance.now();function loop(nowT){let dt=(nowT-last)/1000;last=nowT;if(play1)t1+=dt*Number(sp1.value)*1.3;if(play2){t2+=dt*Number(sp2.value)*1.2;sync()}draw1();draw2();requestAnimationFrame(loop)}buildAnalytic();
 </script>
 </body>
